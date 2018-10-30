@@ -1,0 +1,365 @@
+<template>
+    <div>
+        <v-layout row wrap>
+            <v-flex xs12 sm1 v-if="loaded">        
+                <v-btn class="noprint" outline color="indigo" @click="makePDF">Save Invoice</v-btn>
+            </v-flex>
+        </v-layout>
+        <v-layout row wrap>
+            <v-flex xs12 sm3 v-if="loaded">
+                <v-card-text>
+                {{ relationships.length }} Other Relationships found
+                <v-combobox
+                v-model="contact"
+                :items="relationships"
+                :return-object=false
+                solo
+                label="Select Contact"
+                ></v-combobox>
+                </v-card-text>
+            </v-flex>
+            <v-flex xs12 sm12 v-if="loaded">
+                <v-card-text>
+                Gift Reference
+                <v-text-field v-model="gift.reference" solo label="Reference"></v-text-field>
+                </v-card-text>
+            </v-flex>
+        </v-layout>
+        <div ref="invoice" id="invoice" v-if="loaded">
+            <h1 class="print">Request for Payment</h1>
+            <div class="constAddr">
+                <div class="print"><span class="print" v-show="contact.length > 0">Attn: </span>{{ contact }}</div>
+                {{ gift.constituent.name }}
+                <div class="print" v-html="gift.constituent.address.formatted_address"></div>
+            </div>
+            <div class="collegeAddr">
+                Development & Alumni Relations Office <br>
+                Lethbridge College<br>
+                3000 College Drive South<br>
+                Lethbridge, AB T1K 1L6<br>
+                403-320-3457<br>
+                advancement@lethbridgecollege.ca
+            </div>
+            <div class="date">{{ date.toLocaleString('en', options) }}</div>
+            <h3 class="supportText">With your support, we are opening doors to a new future! Thank you.</h3>
+            <h3 class="controlNum">Control Number: {{ gift.id }} </h3>
+            <div class="billedTo print constAddr">
+                Billed To: <br>
+                {{ gift.constituent.name }}
+                <div class="print" v-html="gift.constituent.address.formatted_address"></div>
+            </div>
+            <div class="reference">Description: {{ gift.reference }}</div>
+            <table>
+                <tr class="headers"><td>Details</td><td class="amount">Amount</td></tr>
+                <tr v-for="item in giftSplits" :key="item.id">
+                    <td v-if="giftSplits.length > 1">{{ item.fund_name }} 
+                        <span class="print" v-if="item.package_id > 0"> - {{ giftPackages[item.package_id] }} </span>
+                    </td><td v-else>{{ gift.reference }}</td> <td class="amount"> ${{ item.amount.value.toLocaleString() }} </td>
+                </tr>
+                <tr class="total print"><td>Total:</td><td class="amount underline">    ${{ gift.amount.value.toLocaleString() }}</td></tr>
+            </table>
+            <div class="footer print">
+                <div class="print">NOTE: Please make payments payable to Lethbridge College and send to:</div><br>
+                Development &amp; Alumni Relations Office <br>Lethbridge College<br>3000 College Drive South<br>Lethbridge, AB T1K 1L6<br>
+            </div>
+        </div>
+    </div>
+</template>
+
+<style>
+
+    @media print {
+        #invoice > *, table > *, tr, td, .print {
+            visibility: visible !important;
+            /* color: white !important; */
+        }
+
+        #invoice {
+            position: fixed;
+            top: 0;
+            left: -40px;
+            color: black !important;
+        }
+
+        * {
+            visibility: hidden;
+        }
+    }
+
+    h1 {
+        text-align: center;
+    }
+
+    #invoice {
+        /* width: 200mm; */
+        /* height: 285mm; */
+        /* height: 1078px; */
+        width: 792px;
+        /* width: 1584px; */
+        /* height: 843px;
+        width: 596px; */
+        /* background-color: aqua; */
+        padding: 15mm;
+        padding-top: 35mm;
+        font-weight: 500;
+        letter-spacing: 0.05ch;
+        /* color: black; */
+        /* font-family: ma; */
+        /* font-size: .75em; */
+    }
+
+    .constAddr, .collegeAddr {
+        line-height: 1.1em;
+    }
+
+    .collegeAddr, .date {
+        text-align: right;
+    }
+
+    .date {
+        margin-top: 1em;
+    }
+
+    .supportText {
+        text-align: center;
+        margin-top: 1em;
+    }
+
+    .controlNum {
+        font-size: 1em;
+        margin-bottom: 2em;        
+        margin-top: 2em;
+    }
+
+    table {
+        /* background-color: red; */
+        /* font-size: 10px; */
+        border: none;
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    td {
+        padding: 3px;
+    }
+
+    .amount {
+        text-align: right;
+    }
+
+    .headers {
+        font-weight: bold;
+    }
+
+    .underline {
+        text-decoration: underline;
+    }
+
+    .footer {
+        margin-top: 3em;
+        line-height: 1.1em;
+
+    }
+
+    .total {
+        font-weight: bold;
+        background-color: #D9D9D9 !important;
+
+    }
+
+    .reference {
+        font-weight: bold;
+        margin-bottom: 2em;        
+        margin-top: 2em;
+    }
+</style>
+
+
+<script>
+import Bottleneck from 'bottleneck'
+// import jsPDF from "jspdf"
+// import pdfmake from "pdfmake"
+import * as pdfmake from 'pdfmake/build/pdfmake'
+import html2canvas from "html2canvas"
+const { remote, BrowserWindow } = require('electron')
+
+const limiter = new Bottleneck({
+    minTime: 250,
+    maxConcurrent: 3
+});
+
+export default {
+    name: 'Invoicedisplay',
+    data: () => ({
+        id: null,
+        loaded: false,
+        gift: {},
+        giftSplits: [],
+        giftPackages: [],
+        relationships: [],
+        contact: "",
+        options: {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit"
+        },
+        date: new Date()
+    }),
+    props: ['giftID'],
+    methods: {
+        getGift(id) {
+            this.skyGetGift(id)
+                .then((response) => {
+                    response.data.constituent = {
+                        name: 'loading...'
+                    };
+                    response.data.constituent.contact = {
+                        name: 'loading...'
+                    };
+                    response.data.date = new Date(response.data.date);
+                    response.data.date_added = new Date(response.data.date_added);
+                    this.$set(this, 'gift', response.data);
+                    this.$set(this, 'giftSplits', response.data.gift_splits);
+                    this.getConstituent(this.gift.constituent_id);
+                    if (this.gift.gift_splits.length > 1) {
+                        console.log("Get funds");
+                        this.getFunds();
+                    }
+                })
+                .catch((response) => {
+                    console.log(response);
+                })
+        },
+        getConstituent(id) {
+            limiter.schedule(() => this.skyGetConstituent(id))
+                .then((response) => {
+                    if (response.data.address) response.data.address.formatted_address = response.data.address.formatted_address.replace(/\r\n/gm, "<br>");
+                    else {
+                        response.data.address = {
+                            formatted_address: "No address Found"
+                        }
+                    }
+                    this.$set(this.gift, 'constituent', response.data);
+                    if (this.gift.constituent.type == "Organization") this.getConstituentRels(this.gift.constituent_id);
+                    else this.loaded = true;
+                })
+                .catch((response) => {
+                    console.log(response);
+                })
+        },
+        //Gets the relationship IDs for constituent
+        //Looks for the primary and gets constituent info if found
+        getConstituentRels(id) {
+            limiter.schedule(() => this.skyGetConstituentRels(id))
+                .then((response) => {
+                    var primary_id = null;
+                    console.log(response.data);
+                    // this.relationships = response.data;
+                    var obj = {};
+                    response.data.value.forEach(rel => {
+                        obj = {
+                            value: rel.name,
+                            text: rel.name + " - " + rel.type + " - " + rel.organization_contact_type
+                        }
+                        // this.relationships.push(rel.name);
+                        this.relationships.push(obj);
+                        if (typeof rel.organization_contact_type !== 'undefined' && rel.organization_contact_type == "Primary" && this.contact == "") {
+                            this.contact = rel.name;
+                        }
+                    });
+                    this.loaded = true;
+                })
+                .catch((response) => {
+                    console.log(response);
+                })
+        },
+        getFunds() {
+            this.gift.gift_splits.forEach(gift => {
+                limiter.schedule(() => this.skyGetFund(gift.fund_id))
+                    .then((response) => {
+                        gift.fund_name = response.data.description;
+                    })
+                    .catch((response) => {
+                        console.log(response);
+                    })
+            });
+        },
+        makePDF() {
+            var invoice = document.getElementById("invoice");
+            var fs = require('fs');
+            var d = new Date();
+            var date = d.getFullYear().toString().substr(-2) + String(d.getMonth()+1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
+            var filename = date + "-" + this.giftID + '-' + this.gift.constituent.name.replace(/[^\w\s]| /gi, '');
+            if (filename.length > 32) {
+                filename = filename.substring(0, 31);
+            }
+            filename += ".pdf";
+
+            var currentWindow = remote.getCurrentWindow()
+
+
+            currentWindow.webContents.printToPDF(this.pdfSettings(), (err, data) => {
+                    // this.postInvoice(data, filename);
+                    fs.writeFile('C:\\Users\\s0147873\\Lethbridge College\\Development - Documents\\Analyst\\Gift Proccessing\\Invoices\\' + filename, data, function(err, data) {
+                        console.log('hi');
+                        if(err) {
+                            return console.log(err);
+                        }
+                    }); 
+            })
+        },
+        postInvoice(blob, filename) {
+            console.log('hi');
+            console.log(blob);
+            var request = {
+                name: "Gift Invoice",
+                parent_id: this.id,
+                tags: ["Invoice"],
+                type: "Physical",
+                file_id: null,
+                file_name: filename,
+                thumbnail_id: null
+            };
+
+            this.skyPostGiftDocument(request, blob)
+                // .then((response) => {
+                //     console.table(response);
+                // })
+                // .catch((response) => {
+                //     console.log(response);
+                // })
+        },
+        pdfSettings() {
+            var paperSizeArray = ["A4", "A5"];
+            var option = {
+                landscape: false,
+                marginsType: 0,
+                printBackground: true,
+                printSelectionOnly: false,
+            };
+            return option;
+        },
+
+    },
+    mounted() {
+        // this.id = this.$route.params.id;
+        // this.getGift(this.id);
+        this.giftPackages[326] = "Sponsorship";
+        this.giftPackages[327] = "Tickets";
+        this.giftPackages[328] = "Sponsorship";
+        this.giftPackages[329] = "Tickets";
+    },
+    watch: {
+      giftID: function() {
+        this.loaded = false;
+        this.gift = {};
+        this.relationships =  [];
+        this.contact = "";
+        this.getGift(this.giftID);
+      },
+      loaded: function() {
+        //   this.g = Object.assign({}, this.gift, this.gift);
+      }
+    }
+}
+</script>
