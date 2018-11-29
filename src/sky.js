@@ -87,7 +87,7 @@ const Sky = {
                             var headers = {
                                 "x-ms-blob-type": h[0].value,
                                 "x-ms-version": h[1].value,
-                                "Access-Control-Allow-Origin" : "localhost:9080/",
+                                // "Access-Control-Allow-Origin" : "localhost:9080/",
                                 "Content-Type": "application/pdf"
                             }
                             var upload = Vue.http.create({

@@ -6,7 +6,7 @@
             </v-flex>
         </v-layout>
         <v-layout row wrap>
-            <v-flex xs12 sm3 v-if="loaded">
+            <v-flex xs12 sm3 v-if="relationships.length > 0">
                 <v-card-text>
                 {{ relationships.length }} Other Relationships found
                 <v-combobox
@@ -22,9 +22,12 @@
                 <v-card-text>
                 Gift Reference
                 <v-text-field v-model="gift.reference" solo label="Reference"></v-text-field>
+                Warning Text
+                <v-text-field v-model="warningText" solo label="Warning Text"></v-text-field>
                 </v-card-text>
             </v-flex>
         </v-layout>
+        <v-card>
         <div ref="invoice" id="invoice" v-if="loaded">
             <h1 class="print">Request for Payment</h1>
             <div class="constAddr">
@@ -42,6 +45,7 @@
             </div>
             <div class="date">{{ date.toLocaleString('en', options) }}</div>
             <h3 class="supportText">With your support, we are opening doors to a new future! Thank you.</h3>
+            <h3 class="warnText" v-show="warningText">{{ warningText }}</h3>
             <h3 class="controlNum">Control Number: {{ gift.id }} </h3>
             <div class="billedTo print constAddr">
                 Billed To: <br>
@@ -63,6 +67,7 @@
                 Development &amp; Alumni Relations Office <br>Lethbridge College<br>3000 College Drive South<br>Lethbridge, AB T1K 1L6<br>
             </div>
         </div>
+        </v-card>
     </div>
 </template>
 
@@ -123,6 +128,12 @@
     .supportText {
         text-align: center;
         margin-top: 1em;
+    }
+
+    .warnText {
+        text-align: center;
+        margin-top: 1em;
+        color: red;
     }
 
     .controlNum {
@@ -198,6 +209,7 @@ export default {
         giftPackages: [],
         relationships: [],
         contact: "",
+        warningText: null,
         options: {
             year: "numeric",
             month: "2-digit",
@@ -322,12 +334,12 @@ export default {
             };
 
             this.skyPostGiftDocument(request, blob)
-                // .then((response) => {
-                //     console.table(response);
-                // })
-                // .catch((response) => {
-                //     console.log(response);
-                // })
+                .then((response) => {
+                    console.table(response);
+                })
+                .catch((response) => {
+                    console.log(response);
+                })
         },
         pdfSettings() {
             var paperSizeArray = ["A4", "A5"];

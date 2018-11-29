@@ -7,8 +7,9 @@ import App from './App'
 import router from './router'
 import store from './store'
 import Sky from "../sky.js"
+import { credentials } from "../credentials.js"
 
-Vue.use(Sky, {key: "temp", id: "temp", url: "temp"});
+Vue.use(Sky, credentials);
 
 Vue.use(Vuetify)
 if (!process.env.IS_WEB) Vue.use(require('vue-electron'))
