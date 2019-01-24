@@ -48,7 +48,7 @@
             hide-actions
             class="elevation-1"
           >
-            <template v-if="props.item.type == 'Pledge'" slot="items" slot-scope="props">
+            <template slot="items" slot-scope="props">
               <td><a :href="'https://renxt.blackbaud.com/gifts/' + props.item.id">NXT</a></td>
               <td>{{ props.item.constituent.name }}</td>
               <td>{{ props.item.type }}</td>
@@ -73,6 +73,8 @@
       </v-slide-y-transition>
     </v-layout>
     <v-btn class="noprint" outline color="indigo" @click="giftID = null" v-show="giftID != null">Back</v-btn>
+    <v-btn class="noprint" outline color="indigo" @click="prevInvoice = null" v-show="giftID != null && giftIndex > 0">Previous</v-btn>
+    <v-btn class="noprint" outline color="indigo" @click="nextInvoice" v-show="giftID != null && giftIndex < gifts.length - 1">Next</v-btn>
     <Invoicedisplay :giftID="giftID" v-show="giftID != null"></Invoicedisplay>
   </div>
 </template>
@@ -94,6 +96,7 @@ const limiter = new Bottleneck({
       date: null,
       datePicker: null,
       giftID: null,
+      giftIndex: null,
       gifts: [],
       headers: [
         {text: 'NXT', value: 'id', align: 'left', sortable: false},
@@ -124,7 +127,7 @@ const limiter = new Bottleneck({
       },
       getGifts() {
         var date = new Date(this.date).toISOString();
-        limiter.schedule(() => this.skyGetGifts(date))
+        limiter.schedule(() => this.skyGetGifts(date, "Pledge"))
           .then((response) => {
               response.data.value = response.data.value.reverse();
               response.data.value.forEach(gift => {
@@ -141,7 +144,7 @@ const limiter = new Bottleneck({
       },
       getConstituents() {
         this.gifts.forEach(gift => {
-          if (gift.type == 'Pledge') {
+          // if (gift.type == 'Pledge') {
             limiter.schedule(() => this.skyGetConstituent(gift.constituent_id))
               .then((response) => {
                 gift.constituent = response.data;
@@ -149,7 +152,7 @@ const limiter = new Bottleneck({
               .catch((response) => {
                   console.log(response);
               })
-          }
+          // }
         });
       },
       goToInvoice(id) {
@@ -163,10 +166,27 @@ const limiter = new Bottleneck({
         if (d.getDate() == 1) day = String(d.getDate()).padStart(2, "0");
         else day = String(d.getDate()-1).padStart(2, "0")
         return d.getFullYear().toString() + "-" + String(d.getMonth()+1).padStart(2, "0") + "-" + day;
+      },
+      nextInvoice() {
+        this.giftID = this.gifts[this.giftIndex+1].id;
+      },
+      prevInvoice() {
+        this.giftID = this.gifts[this.giftIndex-1].id;
       }
     },
     mounted() {
       this.date = this.getYesterday();
+    },
+    watch: {
+      giftID: function() {
+        var currentIndex = null;
+        this.gifts.forEach((gift, index) => {
+          if (gift.id == this.giftID) {
+            currentIndex = index;
+          };
+        });
+        this.giftIndex = currentIndex;
+      }
     }
   }
 </script>

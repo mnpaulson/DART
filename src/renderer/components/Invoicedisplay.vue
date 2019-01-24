@@ -24,6 +24,8 @@
                 <v-text-field v-model="gift.reference" solo label="Reference"></v-text-field>
                 Warning Text
                 <v-text-field v-model="warningText" solo label="Warning Text"></v-text-field>
+                Amount
+                <!-- <v-text-field v-model="gift.balance.value" solo label="Amount"></v-text-field> -->
                 </v-card-text>
             </v-flex>
         </v-layout>
@@ -58,9 +60,13 @@
                 <tr v-for="item in giftSplits" :key="item.id">
                     <td v-if="giftSplits.length > 1">{{ item.fund_name }} 
                         <span class="print" v-if="item.package_id > 0"> - {{ giftPackages[item.package_id] }} </span>
-                    </td><td v-else>{{ gift.reference }}</td> <td class="amount"> ${{ item.amount.value.toLocaleString() }} </td>
+                    </td><td v-else>{{ gift.reference }}</td> 
+                    <td class="amount">
+                        <span v-if="giftSplits.length < 0"> ${{ item.balance.value.toLocaleString() }} </span>
+                        <span v-else>${{ gift.balance.value.toLocaleString() }}</span>
+                    </td>
                 </tr>
-                <tr class="total print"><td>Total:</td><td class="amount underline">    ${{ gift.amount.value.toLocaleString() }}</td></tr>
+                <tr class="total print"><td>Total:</td><td class="amount underline">    ${{ gift.balance.value.toLocaleString() }}</td></tr>
             </table>
             <div class="footer print">
                 <div class="print">NOTE: Please make payments payable to Lethbridge College and send to:</div><br>
@@ -193,6 +199,8 @@ import Bottleneck from 'bottleneck'
 import * as pdfmake from 'pdfmake/build/pdfmake'
 import html2canvas from "html2canvas"
 const { remote, BrowserWindow } = require('electron')
+const settings = require('electron-settings');
+
 
 const limiter = new Bottleneck({
     minTime: 250,
@@ -311,35 +319,41 @@ export default {
 
 
             currentWindow.webContents.printToPDF(this.pdfSettings(), (err, data) => {
-                    // this.postInvoice(data, filename);
-                    fs.writeFile('C:\\Users\\s0147873\\Lethbridge College\\Development - Documents\\Analyst\\Gift Proccessing\\Invoices\\' + filename, data, function(err, data) {
-                        console.log('hi');
-                        if(err) {
-                            return console.log(err);
-                        }
-                    }); 
+                    //Add file path validation here
+                    if (settings.has('invoiceFilePath')) {
+                        fs.writeFile(settings.get('invoiceFilePath') + "\\" + filename, data, function(err, data) {
+                            console.log(settings.get('invoiceFilePath'));
+                            if(err) {
+                                return console.log(err);
+                            }
+                        });
+                        this.skyPythonPutGiftFile(settings.get('invoiceFilePath') + "\\" + filename, this.giftID, "Invoice", ["Invoice", "Example"]);
+                    } else {
+                        //put error here
+                    }
             })
         },
         postInvoice(blob, filename) {
-            console.log('hi');
-            console.log(blob);
             var request = {
                 name: "Gift Invoice",
                 parent_id: this.id,
+                gift_id: this.giftID,
                 tags: ["Invoice"],
                 type: "Physical",
                 file_id: null,
                 file_name: filename,
+			    upload_thumbnail: true,
                 thumbnail_id: null
             };
 
-            this.skyPostGiftDocument(request, blob)
-                .then((response) => {
-                    console.table(response);
-                })
-                .catch((response) => {
-                    console.log(response);
-                })
+
+            this.skyPostGiftDocument(request, blob);
+                // .then((response) => {
+                //     console.table(response);
+                // })
+                // .catch((response) => {
+                //     console.log(response);
+                // })
         },
         pdfSettings() {
             var paperSizeArray = ["A4", "A5"];

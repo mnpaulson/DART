@@ -19,6 +19,16 @@ export default new Router({
       path: '/funds',
       name: 'funds',
       component: require('@/components/Funds').default
+    },    
+    {
+      path: '/contactinfo',
+      name: 'ContactInfo',
+      component: require('@/components/ContactInfo').default
+    },
+    {
+      path: '/config',
+      name: 'Config',
+      component: require('@/components/Config').default
     },
     {
       path: '*',

@@ -61,7 +61,9 @@
       items: [
         { icon: 'apps', title: 'Home', to: '/' },
         { icon: 'mail_outline', title: 'Invoice', to: '/invoice' },
-        { icon: 'account_balance_wallet', title: 'Funds', to: '/funds' }
+        { icon: 'account_balance_wallet', title: 'Funds', to: '/funds' },
+        { icon: 'list', title: 'Contact Info', to: '/contactinfo' },
+        { icon: 'settings', title: 'Config', to: '/config' }
       ],
       miniVariant: false,
       title: 'DART'

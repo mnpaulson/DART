@@ -1,0 +1,66 @@
+<html>
+    <head>
+        <title>
+            Document Upload Test
+        </title>
+    </head>
+    <body>
+        <form method="post" enctype="multipart/form-data">
+            <input type="file" name="files[]" multiple>
+            <input type="submit" value="Upload File" name="submit">
+        </form>
+    <script>
+    
+    //This function takes in the pdf data and file name object
+    //It then makes a request to the blackbaud endpoint and calls the putDocument function
+    // with the pdf data and the response from the blackbaud api.
+    //You must manually set the key and auth variables with appropriate credentials
+    function getDocument(pdf, files) {
+        var params = '{"file_name":"' + files[0].name + '", "upload_thumbnail":false}';
+        var url = "https://api.sky.blackbaud.com/gift/v1/documents";
+        var key = ''
+        var auth = ''
+
+        var document = new XMLHttpRequest();
+        document.open("POST", url, true);
+        document.setRequestHeader('bb-api-subscription-key', key);
+        document.setRequestHeader('Authorization', auth);
+        document.setRequestHeader('Content-Type', 'application/json;charset=UTF-8')
+        document.onload = function() {
+            var response = JSON.parse(document.response);
+            putDocument(response, pdf);
+        }
+        document.send(params);
+    }
+
+    //This function reads the required values from the blackbaud response
+    //it then creates a XMLHttpRequest object with the required values
+    function putDocument(r, pdf) {
+        var header1name = r.file_upload_request.headers[0].name;
+        var header1value = r.file_upload_request.headers[0].value;
+        var header2name = r.file_upload_request.headers[1].name;
+        var header2value = r.file_upload_request.headers[1].value;
+        var url = r.file_upload_request.url;
+
+        var upload = new XMLHttpRequest();
+        upload.open("PUT", url, true);
+        upload.setRequestHeader('Content-type', 'application/pdf');
+        upload.setRequestHeader(header1name, header1value);
+        upload.setRequestHeader(header2name, header2value);
+        upload.onload = function () {
+            var test = JSON.parse(upload.responseText);
+        }
+        upload.send(pdf);
+    }
+
+    const form = document.querySelector('form');
+
+    form.addEventListener('submit', e => {
+        e.preventDefault();
+        const files = document.querySelector('[type=file]').files;
+        const formData = new FormData();
+        getDocument(formData, files);
+    });
+    </script>
+    </body>
+</html>
