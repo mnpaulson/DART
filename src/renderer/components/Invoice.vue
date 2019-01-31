@@ -39,7 +39,7 @@
       </v-layout>
       <v-layout center v-show="giftID === null">
       <v-slide-y-transition mode="out-in">
-        <v-flex>
+        <v-flex xs12 sm10>
         <template>
           <v-data-table
             :headers="headers"
@@ -48,16 +48,17 @@
             hide-actions
             class="elevation-1"
           >
-            <template slot="items" slot-scope="props">
-              <td><a :href="'https://renxt.blackbaud.com/gifts/' + props.item.id">NXT</a></td>
+            <template slot="items" slot-scope="props" >
+              <tr @click="giftID = props.item.id">
+              <td @click.stop="openURL('https://renxt.blackbaud.com/gifts/' + props.item.id)"><a>NXT</a></td>
               <td>{{ props.item.constituent.name }}</td>
-              <td>{{ props.item.type }}</td>
+              <!-- <td>{{ props.item.type }}</td> -->
               <td class="text-xs-right">${{ props.item.amount.value.toLocaleString() }}</td>
               <td>{{ props.item.date.toLocaleDateString() }}</td>
               <td>{{ props.item.date_added.toLocaleDateString() }}</td>
               <td>{{ props.item.reference }}</td>
-              <td>{{ props.item.receipts[0].status }}</td>
-              <td class="justify-center layout px-0">
+              <!-- <td>{{ props.item.receipts[0].status }}</td> -->
+              <!-- <td class="justify-center layout px-0">
                 <v-icon
                   small
                   class="mr-2"
@@ -65,16 +66,17 @@
                 >
                   edit
                 </v-icon>
-              </td>
+              </td> -->
+              </tr>
                   </template>
           </v-data-table>
         </template>
         </v-flex>
       </v-slide-y-transition>
     </v-layout>
-    <v-btn class="noprint" outline color="indigo" @click="giftID = null" v-show="giftID != null">Back</v-btn>
-    <v-btn class="noprint" outline color="indigo" @click="prevInvoice = null" v-show="giftID != null && giftIndex > 0">Previous</v-btn>
-    <v-btn class="noprint" outline color="indigo" @click="nextInvoice" v-show="giftID != null && giftIndex < gifts.length - 1">Next</v-btn>
+    <v-btn class="noprint" outline color="indigo" @click="giftID = null" v-show="giftID != null"><v-icon dark>close</v-icon>Close</v-btn>
+    <v-btn class="noprint" outline color="indigo" @click="prevInvoice = null" v-show="giftID != null" :disabled="giftIndex == 0"><v-icon dark>keyboard_arrow_left</v-icon>Prev</v-btn>
+    <v-btn class="noprint" outline color="indigo" @click="nextInvoice" v-show="giftID != null" :disabled="giftIndex >= gifts.length - 1">Next<v-icon dark>keyboard_arrow_right</v-icon></v-btn>
     <Invoicedisplay :giftID="giftID" v-show="giftID != null"></Invoicedisplay>
   </div>
 </template>
@@ -82,6 +84,7 @@
 <script>
 import Invoicedisplay from './Invoicedisplay'
 import Bottleneck from 'bottleneck'
+const { shell } = require('electron')
 
 const limiter = new Bottleneck({
   minTime: 250,
@@ -101,13 +104,10 @@ const limiter = new Bottleneck({
       headers: [
         {text: 'NXT', value: 'id', align: 'left', sortable: false},
         {text: 'Name', value: 'constituent.name', align: 'left'},
-        {text: 'Type', value: 'type', align: 'left'},
         {text: 'Amount', value: 'amount.value', align: 'right'},
         {text: 'Gift Date', value: 'date', align: 'left'},
         {text: 'Date Added', value: 'date_added', align: 'left'},
         {text: 'Reference', value: 'reference', align: 'left'},
-        {text: 'Receipt', value: 'receipt.status', align: 'left'},
-        {text: 'Actions', value: 'name', sortable: false }
       ]
     }),
     methods: {
@@ -172,6 +172,9 @@ const limiter = new Bottleneck({
       },
       prevInvoice() {
         this.giftID = this.gifts[this.giftIndex-1].id;
+      },
+      openURL(url) {
+        shell.openExternal(url);
       }
     },
     mounted() {

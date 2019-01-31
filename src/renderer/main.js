@@ -11,10 +11,21 @@ import { credentials } from "../credentials.js"
 
 Vue.use(Sky, credentials);
 
-Vue.use(Vuetify)
+// Vue.use(Vuetify)
+Vue.use(Vuetify, {
+  theme: {
+    primary: '#6cc5e7',
+    secondary: '#779a1b',
+    accent: '#0b5157',
+    success: '#94d621',
+    info: '#eda918'
+  }
+})
 if (!process.env.IS_WEB) Vue.use(require('vue-electron'))
 Vue.http = Vue.prototype.$http = axios
 Vue.config.productionTip = false
+
+
 
 /* eslint-disable no-new */
 new Vue({

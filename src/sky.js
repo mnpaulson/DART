@@ -10,6 +10,7 @@ const Sky = {
             data: () => ({
                 loginWindow: null
             }),
+            //Computed variables for connecting to various SKY API endpoints
             computed: {
                 skyGift: {
                     get: function() {
@@ -53,20 +54,17 @@ const Sky = {
                 }
             },
             methods: {
+                //Calls the window creating function and shows the login window
                 login() {
-                    // this.loginWindow = new BrowserWindow({
-                    //     width: 800, 
-                    //     height: 600, 
-                    //     show: false, 
-                    //     devTools: false, 
-                    //     autoHideMenuBar: true,
-                    //     nodeIntegration: false
-                    //   });
-                    // this.newLoginWindow();
+
+                    this.newLoginWindow();
                     this.loginWindow.loadURL("https://oauth2.sky.blackbaud.com/authorization?client_id=" + id + "&response_type=token&redirect_uri=" + url);
                     this.loginWindow.show();
                 },
+                //Creates the electron window in which to display the login screen
+                //Also creates listeners to optain credentials once they are provided and close the window
                 newLoginWindow() {
+                    //create the window object
                     this.loginWindow = new BrowserWindow({
                         width: 800, 
                         height: 600, 
@@ -80,6 +78,7 @@ const Sky = {
                         // this.win = null
                       })
                       
+                      //optain the auth token from the URL and hide the window
                       this.loginWindow.webContents.on('will-navigate', (e, url) =>{
                         if (url.includes("access_token")) {
                             localStorage.setItem('auth', url.split("access_token=")[1].split("&")[0]);
@@ -94,15 +93,31 @@ const Sky = {
                         }
                       })
                 },
+                //Gets gift information for single gift
+                // Arguments:
+                // giftID: the ID of the gift you wish to retreive
                 skyGetGift(giftID) {
                     return this.skyGift.get("gifts/" + giftID);
-                },
+                },                
+                // Gets list of gifts from a given date forward
+                // Function currently does not function without date parameter
+                // Arguments:
+                // date: the date from which to get all gifts after
+                // type: gift types to retreive
                 skyGetGifts(date, type) {
                     var request = "gifts/";
                     if (date !== null) request += "?date_added=" + date;
                     if (type !== null) request += "&gift_type=" + type;
-                    return this.skyGift.get("gifts/" + "?date_added=" + date);                    
+                    return this.skyGift.get(request);                    
                 },
+                //This function is a hacky workaround to a bug on Blackbauds end
+                // currently browsers can not upload files to their documents endpoint
+                // This function call a python script that will handle the document endpoint
+                // Arguments:
+                // Filepath: a string containing the filepath to the file to be uploaded
+                // gift id: the ID of the gift for which you wish to attach the file
+                // displayName: the name of the file as it will be displayed on NXT
+                // tags: an array of strings containing the tags to be displayed on NXT
                 skyPythonPutGiftFile(filepath, gift_id, displayName, tags) {
                     var putParams = [
                         key, 
@@ -112,11 +127,13 @@ const Sky = {
                         displayName,
                         tags.join(" ")
                         ]
-                    child(settings.get('skyexe'), putParams, {windowsVerbatimArguments : true}, function(err, data) {
+                    return child(settings.get('skyexe'), putParams, {windowsVerbatimArguments : true}, function(err, data) {
                         console.log(err);
                         console.log(data.toString());
+                        if (err == null && data.toString() == "File successfully uploaded") return true; 
                     });
                 },
+                //Abadoned code that I'm holding onto in case they fix the CORs bug with file uploads
                 skyPostGiftDocument(request, blob) {
                     // var init = {
                     //     file_name: request.file_name,
@@ -198,18 +215,33 @@ const Sky = {
                     //         console.log(response)
                     //     })                  
                 },
+                // Gets consituent information by ID
+                // Arguments:
+                // id: the id of the consituent you wish to retreive information for
                 skyGetConstituent(id) {
                     return this.skyConstituent.get("constituents/" + id);
-                },
+                },                
+                // Gets consituent relationship information by ID
+                // Arguments:
+                // id: the id of the consituent you wish to retreive relationships for
                 skyGetConstituentRels(id) {
                     return this.skyConstituent.get("constituents/" + id + "/relationships");
-                },
+                },                
+                // Gets consituent name formats
+                // Arguments:
+                // id: the id of the consituent you wish to retreive information for
                 skyGetConstituentNameFormats(id) {
                     return this.skyConstituent.get("constituents/" + id + "/nameformats/summary");
-                },
+                },                
+                // Gets fund information by ID
+                // Arguments:
+                // id: the id of the fund you wish to retreive information for
                 skyGetFund(id) {
                     return this.skyFund.get("funds/" + id);
-                },
+                },               
+                // Gets a list of all funds up to a maximum of 500 per request
+                // Arguments:
+                // offset: the offset for which to get funds. e.g. if first request returns 500, offset of 500 will retreive the next 500 records
                 skyGetFundList(offset) {
                     if (typeof offset !== 'undefined') offset = "&offset=" + offset;
                     else offset = "";
@@ -217,32 +249,32 @@ const Sky = {
                 }
             },
             mounted() {
-                this.loginWindow = new BrowserWindow({
-                    width: 800, 
-                    height: 600, 
-                    show: false, 
-                    devTools: false, 
-                    autoHideMenuBar: true,
-                    nodeIntegration: false
-                  });
+                // this.loginWindow = new BrowserWindow({
+                //     width: 800, 
+                //     height: 600, 
+                //     show: false, 
+                //     devTools: false, 
+                //     autoHideMenuBar: true,
+                //     nodeIntegration: false
+                //   });
                   
-                  this.loginWindow.on('closed', () => {
-                    // this.win = null
-                  })
+                //   this.loginWindow.on('closed', () => {
+                //     // this.win = null
+                //   })
                   
-                  this.loginWindow.webContents.on('will-navigate', (e, url) =>{
-                    if (url.includes("access_token")) {
-                        localStorage.setItem('auth', url.split("access_token=")[1].split("&")[0]);
-                        this.loginWindow.hide();
-                    }
-                  })
+                //   this.loginWindow.webContents.on('will-navigate', (e, url) =>{
+                //     if (url.includes("access_token")) {
+                //         localStorage.setItem('auth', url.split("access_token=")[1].split("&")[0]);
+                //         this.loginWindow.hide();
+                //     }
+                //   })
                   
-                  this.loginWindow.webContents.on('did-get-redirect-request', (e, url) =>{
-                    if (url.includes("access_token")) {
-                        localStorage.setItem('auth', url.split("access_token=")[1].split("&")[0]);
-                        this.loginWindow.hide();
-                    }
-                  })
+                //   this.loginWindow.webContents.on('did-get-redirect-request', (e, url) =>{
+                //     if (url.includes("access_token")) {
+                //         localStorage.setItem('auth', url.split("access_token=")[1].split("&")[0]);
+                //         this.loginWindow.hide();
+                //     }
+                //   })
 
             }
         });

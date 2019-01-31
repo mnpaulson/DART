@@ -74,4 +74,7 @@
 <style>
   @import url('https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons');
   /* Global CSS */
+  .v-navigation-drawer {
+    /* background-color: #c8d8eb !important; */
+  }
 </style>

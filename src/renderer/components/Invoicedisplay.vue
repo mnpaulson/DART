@@ -2,52 +2,84 @@
     <div>
         <v-layout row wrap>
             <v-flex xs12 sm1 v-if="loaded">        
-                <v-btn class="noprint" outline color="indigo" @click="makePDF">Save Invoice</v-btn>
             </v-flex>
         </v-layout>
         <v-layout row wrap>
-            <v-flex xs12 sm3 v-if="relationships.length > 0">
-                <v-card-text>
-                {{ relationships.length }} Other Relationships found
-                <v-combobox
-                v-model="contact"
-                :items="relationships"
-                :return-object=false
-                solo
-                label="Select Contact"
-                ></v-combobox>
-                </v-card-text>
-            </v-flex>
-            <v-flex xs12 sm12 v-if="loaded">
-                <v-card-text>
-                Gift Reference
-                <v-text-field v-model="gift.reference" solo label="Reference"></v-text-field>
-                Warning Text
-                <v-text-field v-model="warningText" solo label="Warning Text"></v-text-field>
-                Amount
-                <!-- <v-text-field v-model="gift.balance.value" solo label="Amount"></v-text-field> -->
-                </v-card-text>
+            <v-flex xs12 sm8 v-if="loaded" class="options-card">
+                <v-expansion-panel
+                    v-model="panel"
+                    expand
+                >
+                    <v-expansion-panel-content>
+                        <template slot="header">Edit Text</template>
+                        <v-card>
+                            <v-card-text>
+                                Gift Reference
+                                <v-text-field v-model="gift.reference" solo label="Reference"></v-text-field>
+                                Warning Text
+                                <v-text-field v-model="warningText" solo label="Warning Text"></v-text-field>
+                                <!-- <v-text-field v-model="gift.balance.value" solo label="Amount"></v-text-field> -->
+                            </v-card-text>
+                        </v-card>
+                    </v-expansion-panel-content>
+                </v-expansion-panel>
+                <v-card>
+                    <v-card-text>
+                        <v-flex xs12>
+                            <v-combobox
+                                v-model="contact"
+                                :items="relationships"
+                                :return-object=false
+                                label="Select Contact"
+                                v-if="relationships.length > 0"
+                            ></v-combobox>
+                        </v-flex>
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-flex xs12>
+                            <v-switch    
+                                label="Show Images"
+                                v-model="images"
+                            ></v-switch>
+                            <v-switch    
+                                label="Upload to NXT"
+                                v-model="upload"
+                            ></v-switch>
+                            <v-btn class="noprint" color="success" @click="makePDF">Save Invoice</v-btn>
+                        </v-flex>
+                    </v-card-actions>
+                </v-card>
             </v-flex>
         </v-layout>
-        <v-card>
+        <div class="text-xs-center">
+            <v-progress-circular
+                :size="100"
+                indeterminate
+                color="primary"
+                v-if="!loaded"
+                >
+            </v-progress-circular>
+        </div>
+        <v-card id="invoiceCard">
         <div ref="invoice" id="invoice" v-if="loaded">
+            <img v-if="images" src="/static/lclogo.png" alt="" class="lclogo print">
             <h1 class="print">Request for Payment</h1>
             <div class="constAddr">
                 <div class="print"><span class="print" v-show="contact.length > 0">Attn: </span>{{ contact }}</div>
                 {{ gift.constituent.name }}
                 <div class="print" v-html="gift.constituent.address.formatted_address"></div>
             </div>
-            <div class="collegeAddr">
+            <!-- <div class="collegeAddr">
                 Development & Alumni Relations Office <br>
                 Lethbridge College<br>
                 3000 College Drive South<br>
                 Lethbridge, AB T1K 1L6<br>
                 403-320-3457<br>
                 advancement@lethbridgecollege.ca
-            </div>
-            <div class="date">{{ date.toLocaleString('en', options) }}</div>
+            </div> -->
             <h3 class="supportText">With your support, we are opening doors to a new future! Thank you.</h3>
             <h3 class="warnText" v-show="warningText">{{ warningText }}</h3>
+            <h3 class="date">Sent: {{ date.toLocaleString('en', options) }}</h3>
             <h3 class="controlNum">Control Number: {{ gift.id }} </h3>
             <div class="billedTo print constAddr">
                 Billed To: <br>
@@ -72,12 +104,17 @@
                 <div class="print">NOTE: Please make payments payable to Lethbridge College and send to:</div><br>
                 Development &amp; Alumni Relations Office <br>Lethbridge College<br>3000 College Drive South<br>Lethbridge, AB T1K 1L6<br>
             </div>
+            <img v-if="images" src="/static/bereadyswoosh.png" alt="" class="beready print">
         </div>
         </v-card>
     </div>
 </template>
 
 <style>
+
+    .options-card {
+        max-width: 792px !important;
+    }
 
     @media print {
         #invoice > *, table > *, tr, td, .print {
@@ -95,17 +132,38 @@
         * {
             visibility: hidden;
         }
+
+        .beready {
+            float: right;
+            height: 70px;
+            left: 80px;
+            bottom: -170px;
+            position: relative;
+        }
+
+        .lclogo {
+            position: absolute;
+            height: 100px;
+            top: 50px;
+        }
     }
 
     h1 {
         text-align: center;
     }
 
+    #invoiceCard {
+        margin-top: 20px;
+        width: 792px;
+        overflow: hidden;
+    }        
+
     #invoice {
         /* width: 200mm; */
         /* height: 285mm; */
         /* height: 1078px; */
         width: 792px;
+        height: 1024px;
         /* width: 1584px; */
         /* height: 843px;
         width: 596px; */
@@ -114,9 +172,14 @@
         padding-top: 35mm;
         font-weight: 500;
         letter-spacing: 0.05ch;
+        /* overflow: hidden; */
         /* color: black; */
         /* font-family: ma; */
         /* font-size: .75em; */
+    }
+
+    .constAddr {
+        margin-top: .25in;
     }
 
     .constAddr, .collegeAddr {
@@ -124,16 +187,17 @@
     }
 
     .collegeAddr, .date {
-        text-align: right;
+        /* text-align: right; */
     }
 
     .date {
-        margin-top: 1em;
+        margin-top: 2em;
+        font-size: 1em;
     }
 
     .supportText {
         text-align: center;
-        margin-top: 1em;
+        margin-top: 2em;
     }
 
     .warnText {
@@ -145,7 +209,7 @@
     .controlNum {
         font-size: 1em;
         margin-bottom: 2em;        
-        margin-top: 2em;
+        /* margin-top: 2em; */
     }
 
     table {
@@ -176,6 +240,20 @@
         margin-top: 3em;
         line-height: 1.1em;
 
+    }
+
+    .beready {
+        float: right;
+        height: 70px;
+        left: 80px;
+        bottom: -170px;
+        position: relative;
+    }
+
+    .lclogo {
+        position: absolute;
+        height: 100px;
+        top: 50px;
     }
 
     .total {
@@ -218,6 +296,9 @@ export default {
         relationships: [],
         contact: "",
         warningText: null,
+        images: true,
+        upload: true,
+        panel: [false],
         options: {
             year: "numeric",
             month: "2-digit",
@@ -253,6 +334,7 @@ export default {
         getConstituent(id) {
             limiter.schedule(() => this.skyGetConstituent(id))
                 .then((response) => {
+                    
                     if (response.data.address) response.data.address.formatted_address = response.data.address.formatted_address.replace(/\r\n/gm, "<br>");
                     else {
                         response.data.address = {
@@ -287,16 +369,19 @@ export default {
                             this.contact = rel.name;
                         }
                     });
+                    
                     this.loaded = true;
                 })
                 .catch((response) => {
                     console.log(response);
                 })
         },
+        //Gets fund information for each gift associated with the gift
         getFunds() {
             this.gift.gift_splits.forEach(gift => {
                 limiter.schedule(() => this.skyGetFund(gift.fund_id))
                     .then((response) => {
+                        
                         gift.fund_name = response.data.description;
                     })
                     .catch((response) => {
@@ -304,12 +389,14 @@ export default {
                     })
             });
         },
+        //Generates a PDF of the invoice. If the toggle is active it will also uploaded the PDF to NXT
         makePDF() {
             var invoice = document.getElementById("invoice");
             var fs = require('fs');
             var d = new Date();
             var date = d.getFullYear().toString().substr(-2) + String(d.getMonth()+1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
             var filename = date + "-" + this.giftID + '-' + this.gift.constituent.name.replace(/[^\w\s]| /gi, '');
+            //Make sure the names not too long
             if (filename.length > 32) {
                 filename = filename.substring(0, 31);
             }
@@ -327,34 +414,38 @@ export default {
                                 return console.log(err);
                             }
                         });
-                        this.skyPythonPutGiftFile(settings.get('invoiceFilePath') + "\\" + filename, this.giftID, "Invoice", ["Invoice", "Example"]);
+                        if (this.upload) {
+                            this.skyPythonPutGiftFile(settings.get('invoiceFilePath') + "\\" + filename, this.giftID, "Invoice", ["Invoice"]);
+                        }
                     } else {
                         //put error here
                     }
             })
         },
-        postInvoice(blob, filename) {
-            var request = {
-                name: "Gift Invoice",
-                parent_id: this.id,
-                gift_id: this.giftID,
-                tags: ["Invoice"],
-                type: "Physical",
-                file_id: null,
-                file_name: filename,
-			    upload_thumbnail: true,
-                thumbnail_id: null
-            };
+        // Code for broken document upload, use skyPythonPutGiftFile until blackbaud addresses CORs issue
+        // postInvoice(blob, filename) {
+        //     var request = {
+        //         name: "Gift Invoice",
+        //         parent_id: this.id,
+        //         gift_id: this.giftID,
+        //         tags: ["Invoice"],
+        //         type: "Physical",
+        //         file_id: null,
+        //         file_name: filename,
+		// 	    upload_thumbnail: true,
+        //         thumbnail_id: null
+        //     };
 
 
-            this.skyPostGiftDocument(request, blob);
-                // .then((response) => {
-                //     console.table(response);
-                // })
-                // .catch((response) => {
-                //     console.log(response);
-                // })
-        },
+        //     this.skyPostGiftDocument(request, blob);
+        //         .then((response) => {
+        //             console.table(response);
+        //         })
+        //         .catch((response) => {
+        //             console.log(response);
+        //         })
+        // },
+        //Returns option object for PDF print settings
         pdfSettings() {
             var paperSizeArray = ["A4", "A5"];
             var option = {
@@ -368,23 +459,20 @@ export default {
 
     },
     mounted() {
-        // this.id = this.$route.params.id;
-        // this.getGift(this.id);
+        //These values are used to provide a 'name' to various packages in the detail breakdown
         this.giftPackages[326] = "Sponsorship";
         this.giftPackages[327] = "Tickets";
         this.giftPackages[328] = "Sponsorship";
         this.giftPackages[329] = "Tickets";
     },
     watch: {
+      //When gift ID changes we null or empty related values an initiate a request for the new gift values
       giftID: function() {
         this.loaded = false;
         this.gift = {};
         this.relationships =  [];
         this.contact = "";
-        this.getGift(this.giftID);
-      },
-      loaded: function() {
-        //   this.g = Object.assign({}, this.gift, this.gift);
+        if (this.giftID !== null) this.getGift(this.giftID);
       }
     }
 }
