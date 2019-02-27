@@ -9,6 +9,9 @@ import store from './store'
 import Sky from "../sky.js"
 import { credentials } from "../credentials.js"
 
+Vue.component('Snackbar', require('./components/Snackbar.vue').default);
+
+
 Vue.use(Sky, credentials);
 
 // Vue.use(Vuetify)
@@ -21,6 +24,18 @@ Vue.use(Vuetify, {
     info: '#eda918'
   }
 })
+
+var Snackbar = {
+  status: null,
+  msg: null,
+  type: null,
+  setAlert(status, type, msg) {
+      this.status = status;
+      this.msg = msg;
+      this.type = type;       
+  }
+};
+
 if (!process.env.IS_WEB) Vue.use(require('vue-electron'))
 Vue.http = Vue.prototype.$http = axios
 Vue.config.productionTip = false
@@ -33,7 +48,8 @@ new Vue({
   router,
   store,
   data: {
-    Sky: Sky
+    Sky: Sky,
+    Snackbar: Snackbar
   },
   template: '<App/>'
 }).$mount('#app')

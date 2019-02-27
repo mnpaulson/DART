@@ -42,7 +42,8 @@
       </v-navigation-drawer>
       <v-content>
         <v-container fluid>
-          <v-slide-y-transition mode="out-in">
+            <Snackbar></Snackbar>
+          <v-slide-y-transition mode="out-in">          
             <router-view></router-view>
           </v-slide-y-transition>
         </v-container>

@@ -1,10 +1,10 @@
 <template>
     <div>
         <v-layout row wrap>
-            <v-flex xs12 sm1 v-if="loaded">        
+            <v-flex xs12 sm1 v-if="loaded">
             </v-flex>
         </v-layout>
-        <v-layout row wrap>
+        <v-layout>
             <v-flex xs12 sm8 v-if="loaded" class="options-card">
                 <v-expansion-panel
                     v-model="panel"
@@ -18,7 +18,6 @@
                                 <v-text-field v-model="gift.reference" solo label="Reference"></v-text-field>
                                 Warning Text
                                 <v-text-field v-model="warningText" solo label="Warning Text"></v-text-field>
-                                <!-- <v-text-field v-model="gift.balance.value" solo label="Amount"></v-text-field> -->
                             </v-card-text>
                         </v-card>
                     </v-expansion-panel-content>
@@ -34,19 +33,47 @@
                                 v-if="relationships.length > 0"
                             ></v-combobox>
                         </v-flex>
+                        <v-flex>
+                            <v-combobox
+                                v-model="email"
+                                :items="emails"
+                                :return-object=false
+                                label="Select Email"
+                            ></v-combobox> 
+                        </v-flex>
                     </v-card-text>
                     <v-card-actions>
-                        <v-flex xs12>
-                            <v-switch    
-                                label="Show Images"
-                                v-model="images"
-                            ></v-switch>
-                            <v-switch    
-                                label="Upload to NXT"
-                                v-model="upload"
-                            ></v-switch>
-                            <v-btn class="noprint" color="success" @click="makePDF">Save Invoice</v-btn>
-                        </v-flex>
+                        <v-layout row>
+                            <v-flex xs6>
+                                <v-switch
+                                    label="Show Images"
+                                    v-model="images"
+                                ></v-switch>
+                            </v-flex>
+                            <v-flex xs6>
+                                <v-switch
+                                    label="Upload to NXT"
+                                    v-model="upload"
+                                ></v-switch>
+                            </v-flex>
+                            <v-flex xs6>
+                                <v-switch
+                                    label="E-Mail Invoice"
+                                    v-model="toggleEmail"
+                                    v-if="email != ''"
+                                ></v-switch>
+                            </v-flex>
+                        </v-layout>
+                        <v-layout row wrap>
+                            <v-flex xs12>
+                                <v-btn class="noprint" color="success" @click="makePDF">
+                                    Save
+                                    <span v-if="upload && toggleEmail">, Upload</span>
+                                    <span v-else-if="upload"> &nbsp& Upload</span>
+                                    <span v-if="toggleEmail"> &nbsp& E-mail</span>
+                                </v-btn>
+                            </v-flex>
+                        </v-layout>
                     </v-card-actions>
                 </v-card>
             </v-flex>
@@ -90,9 +117,9 @@
             <table>
                 <tr class="headers"><td>Details</td><td class="amount">Amount</td></tr>
                 <tr v-for="item in giftSplits" :key="item.id">
-                    <td v-if="giftSplits.length > 1">{{ item.fund_name }} 
+                    <td v-if="giftSplits.length > 1">{{ item.fund_name }}
                         <span class="print" v-if="item.package_id > 0"> - {{ giftPackages[item.package_id] }} </span>
-                    </td><td v-else>{{ gift.reference }}</td> 
+                    </td><td v-else>{{ gift.reference }}</td>
                     <td class="amount">
                         <span v-if="giftSplits.length < 0"> ${{ item.balance.value.toLocaleString() }} </span>
                         <span v-else>${{ gift.balance.value.toLocaleString() }}</span>
@@ -156,7 +183,7 @@
         margin-top: 20px;
         width: 792px;
         overflow: hidden;
-    }        
+    }
 
     #invoice {
         /* width: 200mm; */
@@ -208,7 +235,7 @@
 
     .controlNum {
         font-size: 1em;
-        margin-bottom: 2em;        
+        margin-bottom: 2em;
         /* margin-top: 2em; */
     }
 
@@ -264,7 +291,7 @@
 
     .reference {
         font-weight: bold;
-        margin-bottom: 2em;        
+        margin-bottom: 2em;
         margin-top: 2em;
     }
 </style>
@@ -276,8 +303,16 @@ import Bottleneck from 'bottleneck'
 // import pdfmake from "pdfmake"
 import * as pdfmake from 'pdfmake/build/pdfmake'
 import html2canvas from "html2canvas"
+import { key } from "../../credentials.js"
 const { remote, BrowserWindow } = require('electron')
 const settings = require('electron-settings');
+
+//
+
+import * as nodemailer from 'nodemailer';
+const aes256 = require('aes256');
+
+//
 
 
 const limiter = new Bottleneck({
@@ -294,11 +329,14 @@ export default {
         giftSplits: [],
         giftPackages: [],
         relationships: [],
+        emails: [],
         contact: "",
+        email: "",
         warningText: null,
         images: true,
         upload: true,
         panel: [false],
+        toggleEmail: false,
         options: {
             year: "numeric",
             month: "2-digit",
@@ -334,7 +372,7 @@ export default {
         getConstituent(id) {
             limiter.schedule(() => this.skyGetConstituent(id))
                 .then((response) => {
-                    
+
                     if (response.data.address) response.data.address.formatted_address = response.data.address.formatted_address.replace(/\r\n/gm, "<br>");
                     else {
                         response.data.address = {
@@ -342,6 +380,7 @@ export default {
                         }
                     }
                     this.$set(this.gift, 'constituent', response.data);
+                    this.getConstituentEmails(this.gift.constituent_id);
                     if (this.gift.constituent.type == "Organization") this.getConstituentRels(this.gift.constituent_id);
                     else this.loaded = true;
                 })
@@ -355,7 +394,6 @@ export default {
             limiter.schedule(() => this.skyGetConstituentRels(id))
                 .then((response) => {
                     var primary_id = null;
-                    console.log(response.data);
                     // this.relationships = response.data;
                     var obj = {};
                     response.data.value.forEach(rel => {
@@ -369,7 +407,33 @@ export default {
                             this.contact = rel.name;
                         }
                     });
-                    
+
+                    this.loaded = true;
+                })
+                .catch((response) => {
+                    console.log(response);
+                })
+        },
+        getConstituentEmails(id) {
+            limiter.schedule(() => this.skyGetConstituentEmails(id))
+                .then((response) => {
+                    var primary_id = null;
+                    console.log(response.data);
+                    // this.relationships = response.data;
+                    var obj = {};
+                    response.data.value.forEach(e => {
+                        obj = {
+                            value: e.address,
+                            text: e.address + " - " + e.type
+                        }
+                        this.emails.push(obj);
+                        if (typeof e.type !== 'undefined' && e.type == "Invoice") {
+                            this.email = e.address;
+                        } else if (this.email == "" && e.type == "E-Mail") {
+                            this.email = e.address;
+                        }
+                    });
+
                     this.loaded = true;
                 })
                 .catch((response) => {
@@ -381,7 +445,7 @@ export default {
             this.gift.gift_splits.forEach(gift => {
                 limiter.schedule(() => this.skyGetFund(gift.fund_id))
                     .then((response) => {
-                        
+
                         gift.fund_name = response.data.description;
                     })
                     .catch((response) => {
@@ -404,7 +468,6 @@ export default {
 
             var currentWindow = remote.getCurrentWindow()
 
-
             currentWindow.webContents.printToPDF(this.pdfSettings(), (err, data) => {
                     //Add file path validation here
                     if (settings.has('invoiceFilePath')) {
@@ -415,12 +478,41 @@ export default {
                             }
                         });
                         if (this.upload) {
-                            this.skyPythonPutGiftFile(settings.get('invoiceFilePath') + "\\" + filename, this.giftID, "Invoice", ["Invoice"]);
+                            const uploadFile = new Promise((resolve, reject) => {
+                                resolve(this.skyPythonPutGiftFile(settings.get('invoiceFilePath') + "\\" + filename, this.giftID, "Invoice", ["Invoice"]));
+                            }).then((success, error) => {console.log(success)})
                         }
+                        if(this.toggleEmail) {
+                            this.emailInvoice(filename);
+                        }
+
                     } else {
                         //put error here
                     }
             })
+        },
+        emailInvoice(filename) {
+            const smtpConnectionString = {
+                host: 'smtp.office365.com',
+                port: '587',
+                auth: { user: settings.get('email'), pass: aes256.decrypt(key, settings.get('password')) },
+                secureConnection: false,
+                tls: { ciphers: 'SSLv3' }
+            };
+
+            const transporter = nodemailer.createTransport(smtpConnectionString);
+            transporter.sendMail({
+                from: settings.get('email'),
+                to: this.email,
+                subject: 'subject',
+                html: 'test encrypt',
+                attachments: [
+                {
+                    path: settings.get('invoiceFilePath') + "\\" + filename,
+                    filename: filename
+                }
+                ]
+            });
         },
         // Code for broken document upload, use skyPythonPutGiftFile until blackbaud addresses CORs issue
         // postInvoice(blob, filename) {
@@ -471,9 +563,16 @@ export default {
         this.loaded = false;
         this.gift = {};
         this.relationships =  [];
+        this.emails = [];
         this.contact = "";
+        this.email = "";
         if (this.giftID !== null) this.getGift(this.giftID);
       }
+    },
+    computed: {
+        Snackbar() {
+            return this.$root.$data.Snackbar;
+        }
     }
 }
 </script>

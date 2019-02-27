@@ -127,10 +127,16 @@ const Sky = {
                         displayName,
                         tags.join(" ")
                         ]
+                    let _this = this;
                     return child(settings.get('skyexe'), putParams, {windowsVerbatimArguments : true}, function(err, data) {
-                        console.log(err);
-                        console.log(data.toString());
-                        if (err == null && data.toString() == "File successfully uploaded") return true; 
+                        // console.log(err);
+                        // console.log(data);
+                        // console.log(this);
+                        if (data.trim() == "File successfully uploaded.") {
+                            console.log('yes?');
+                            _this.$root.$data.Snackbar.setAlert(true, "success", "Invoice Uploaded Successfully");
+                        }
+
                     });
                 },
                 //Abadoned code that I'm holding onto in case they fix the CORs bug with file uploads
@@ -232,7 +238,13 @@ const Sky = {
                 // id: the id of the consituent you wish to retreive information for
                 skyGetConstituentNameFormats(id) {
                     return this.skyConstituent.get("constituents/" + id + "/nameformats/summary");
-                },                
+                },
+                // Gets consituent Email addresses
+                // Arguments:
+                // id: the id of the consituent you wish to retreive information for
+                skyGetConstituentEmails(id) {
+                    return this.skyConstituent.get("constituents/" + id + "/emailAddresses");
+                },                 
                 // Gets fund information by ID
                 // Arguments:
                 // id: the id of the fund you wish to retreive information for
