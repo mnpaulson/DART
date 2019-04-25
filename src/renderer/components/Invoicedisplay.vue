@@ -89,7 +89,7 @@
         </div>
         <v-card id="invoiceCard">
         <div ref="invoice" id="invoice" v-if="loaded">
-            <img v-if="images" src="/static/lclogo.png" alt="" class="lclogo print">
+            <img v-if="images" v-bind:src="logoURL" alt="" class="lclogo print">
             <h1 class="print">Request for Payment</h1>
             <div class="constAddr">
                 <div class="print"><span class="print" v-show="contact.length > 0">Attn: </span>{{ contact }}</div>
@@ -131,7 +131,7 @@
                 <div class="print">NOTE: Please make payments payable to Lethbridge College and send to:</div><br>
                 Development &amp; Alumni Relations Office <br>Lethbridge College<br>3000 College Drive South<br>Lethbridge, AB T1K 1L6<br>
             </div>
-            <img v-if="images" src="/static/bereadyswoosh.png" alt="" class="beready print">
+            <img v-if="images" :src="swooshURL" alt="" class="beready print">
         </div>
         </v-card>
     </div>
@@ -161,11 +161,19 @@
         }
 
         .beready {
-            float: right;
+            /* float: right;
             height: 70px;
             left: 80px;
             bottom: -170px;
-            position: relative;
+            position: relative; */
+
+            float: right;
+            height: 70px;
+            right: 0px;
+            /* bottom: -170px; */
+            bottom: 15px;
+            /* position: relative; */
+            position: absolute;
         }
 
         .lclogo {
@@ -272,9 +280,11 @@
     .beready {
         float: right;
         height: 70px;
-        left: 80px;
-        bottom: -170px;
-        position: relative;
+        right: 0px;
+        /* bottom: -170px; */
+        bottom: 15px;
+        /* position: relative; */
+        position: absolute;
     }
 
     .lclogo {
@@ -342,7 +352,9 @@ export default {
             month: "2-digit",
             day: "2-digit"
         },
-        date: new Date()
+        date: new Date(),
+        swooshURL: 'static/bereadyswoosh.png',
+        logoURL: 'static/lclogo.png'
     }),
     props: ['giftID'],
     methods: {
