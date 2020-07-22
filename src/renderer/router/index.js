@@ -26,6 +26,16 @@ export default new Router({
       component: require('@/components/ContactInfo').default
     },
     {
+      path: '/attachments',
+      name: 'Attachments',
+      component: require('@/components/Attachments').default
+    },
+    {
+      path: '/giftdata',
+      name: 'Gift Data',
+      component: require('@/components/Giftdata').default
+    },
+    {
       path: '/config',
       name: 'Config',
       component: require('@/components/Config').default

@@ -64,6 +64,8 @@
         { icon: 'mail_outline', title: 'Invoice', to: '/invoice' },
         { icon: 'account_balance_wallet', title: 'Funds', to: '/funds' },
         { icon: 'list', title: 'Contact Info', to: '/contactinfo' },
+        { icon: 'folder', title: 'Attachments', to: '/attachments' },
+        { icon: 'folder', title: 'Gift Data', to: '/giftdata' },
         { icon: 'settings', title: 'Config', to: '/config' }
       ],
       miniVariant: false,

@@ -51,6 +51,34 @@ const Sky = {
                         })
                         return fund;
                     }                    
+                },
+                skyAttachment: {
+                    get: function() {
+                        var fund = Vue.http.create({
+                            baseURL: 'https://api.sky.blackbaud.com/constituent/v1/constituents/',
+                            timeout: 5000,
+                            headers: {"bb-api-subscription-key": key, "Authorization": "Bearer " + localStorage.getItem('auth')}
+                        })
+                        return fund;
+                    }                    
+                },
+                webGetPledgeRelated: {
+                    get: function() {
+                        var related = Vue.http.create({
+                            baseURL: 'https://s23a01giftui.renxt.blackbaud.com/legacyui/gifts/10353/pledge/payments?top=0&skip=0&envid=p-QZVkNboM8kCrEom4N0EZ6A&svcid=renxt',
+                            timeout: 5000,
+                            credentials:"include",
+                            headers: {"accept":"application/json, text/plain,*/*"
+                            ,"authorization":"Bearer " + localStorage.getItem('auth')
+                            },
+                            referrer: "https://host.nxt.blackbaud.com/gift/page/10353?envid=p-QZVkNboM8kCrEom4N0EZ6A&svcid=renxt",
+                            referrerPolicy:"no-referrer-when-downgrade",
+                            body:null,
+                            method:"GET",
+                            mode:"cors"
+                        })
+                        return related;
+                    }
                 }
             },
             methods: {
@@ -244,6 +272,12 @@ const Sky = {
                 // id: the id of the consituent you wish to retreive information for
                 skyGetConstituentEmails(id) {
                     return this.skyConstituent.get("constituents/" + id + "/emailAddresses");
+                },
+                //Gets consituent Ids from offset
+                skyGetConstituentIds(offset) {
+                    if (typeof offset !== 'undefined') offset = "&offset=" + offset;
+                    else offset = "";
+                    return this.skyConstituent.get("constituents/?fields=id&limit=50&sort=id" + offset);
                 },                 
                 // Gets fund information by ID
                 // Arguments:
@@ -258,7 +292,11 @@ const Sky = {
                     if (typeof offset !== 'undefined') offset = "&offset=" + offset;
                     else offset = "";
                     return this.skyFund.get("funds/?include_inactive=true" + offset);
-                }
+                },
+                // Gets a list of attachments for the requested contact
+                skyGetAttachments(id) {
+                    return this.skyAttachment.get(id + "/attachments");
+                }, 
             },
             mounted() {
                 // this.loginWindow = new BrowserWindow({

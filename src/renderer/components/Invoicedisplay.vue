@@ -40,6 +40,14 @@
                                 :return-object=false
                                 label="Select Email"
                             ></v-combobox> 
+                            <v-combobox
+                                v-model="paymentUrl"
+                                :items="urls"
+                                :return-object=false
+                                label="Select Payment Url"
+                            ></v-combobox> 
+                            <!-- <v-text-field v-model="paymentUrl" solo label="Payment Url"></v-text-field> -->
+
                         </v-flex>
                     </v-card-text>
                     <v-card-actions>
@@ -50,19 +58,19 @@
                                     v-model="images"
                                 ></v-switch>
                             </v-flex>
-                            <v-flex xs6>
+                            <!-- <v-flex xs6>
                                 <v-switch
                                     label="Upload to NXT"
                                     v-model="upload"
                                 ></v-switch>
-                            </v-flex>
-                            <v-flex xs6>
+                            </v-flex> -->
+                            <!-- <v-flex xs6>
                                 <v-switch
                                     label="E-Mail Invoice"
                                     v-model="toggleEmail"
                                     v-if="email != ''"
                                 ></v-switch>
-                            </v-flex>
+                            </v-flex> -->
                         </v-layout>
                         <v-layout row wrap>
                             <v-flex xs12>
@@ -104,7 +112,6 @@
                 403-320-3457<br>
                 advancement@lethbridgecollege.ca
             </div> -->
-            <h3 class="supportText">With your support, we are opening doors to a new future! Thank you.</h3>
             <h3 class="warnText" v-show="warningText">{{ warningText }}</h3>
             <h3 class="date">Sent: {{ date.toLocaleString('en', options) }}</h3>
             <h3 class="controlNum">Control Number: {{ gift.id }} </h3>
@@ -128,8 +135,15 @@
                 <tr class="total print"><td>Total:</td><td class="amount underline">    ${{ gift.balance.value.toLocaleString() }}</td></tr>
             </table>
             <div class="footer print">
-                <div class="print">NOTE: Please make payments payable to Lethbridge College and send to:</div><br>
-                Development &amp; Alumni Relations Office <br>Lethbridge College<br>3000 College Drive South<br>Lethbridge, AB T1K 1L6<br>
+                <div class="print">Please make payment to Lethbridge College within 30 days of receipt via the following:</div><br>
+                <br>
+                <span v-if="paymentUrl.length > 0"><br><span class="print"> 1. Credit card via the secured site: </span><a class="print" v-bind:href="paymentUrl">{{paymentUrl}}</a></span>
+                <br><br>
+                <span class="print" v-if="paymentUrl.length > 0">2.</span>
+                <span class="print" v-if="paymentUrl.length <= 0">1.</span>
+                 Cheque made payable to Lethbridge College and mailed to:<br>
+                <br>
+                <div class="print indent">Development &amp; Alumni Engagement Office <br>Lethbridge College<br>3000 College Drive South<br>Lethbridge, AB T1K 1L6<br></div>
             </div>
             <img v-if="images" :src="swooshURL" alt="" class="beready print">
         </div>
@@ -185,6 +199,8 @@
 
     h1 {
         text-align: center;
+        top: -50px;
+        position: relative;
     }
 
     #invoiceCard {
@@ -304,6 +320,10 @@
         margin-bottom: 2em;
         margin-top: 2em;
     }
+
+    .indent {
+        margin-left: 17px;
+    }
 </style>
 
 
@@ -344,9 +364,10 @@ export default {
         email: "",
         warningText: null,
         images: true,
-        upload: true,
+        upload: false,
         panel: [false],
         toggleEmail: false,
+        paymentUrl: null,
         options: {
             year: "numeric",
             month: "2-digit",
@@ -354,7 +375,13 @@ export default {
         },
         date: new Date(),
         swooshURL: 'static/bereadyswoosh.png',
-        logoURL: 'static/lclogo.png'
+        logoURL: 'static/lclogo.png',
+        urls: [
+            'https://lethbridgecollege.ca/scholarshippayment',
+            'https://lethbridgecollege.ejoinme.org/honouringexcellencesponsorships',
+            'https://lethbridgecollege.ejoinme.org/honouringexcellencetickets',
+            ''
+        ]
     }),
     props: ['giftID'],
     methods: {
@@ -568,6 +595,7 @@ export default {
         this.giftPackages[327] = "Tickets";
         this.giftPackages[328] = "Sponsorship";
         this.giftPackages[329] = "Tickets";
+        this.paymentUrl = this.urls[0];
     },
     watch: {
       //When gift ID changes we null or empty related values an initiate a request for the new gift values
