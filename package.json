@@ -59,7 +59,7 @@
     "electron-settings": "^3.2.0",
     "html2canvas": "^1.0.0-alpha.12",
     "json2csv": "^4.3.2",
-    "nodemailer": "^5.1.1",
+    "nodemailer": "^6.4.16",
     "pdfmake": "^0.1.38",
     "vue": "^2.4.2",
     "vue-electron": "^1.0.6",
